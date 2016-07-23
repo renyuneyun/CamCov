@@ -20,9 +20,11 @@
 package ryey.camcov;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 public class SettingsActivity extends Activity
         implements SharedPreferences.OnSharedPreferenceChangeListener{
@@ -47,9 +49,19 @@ public class SettingsActivity extends Activity
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if (key.equals(getString(R.string.key_pref_enabled))) {
             if (sharedPreferences.getBoolean(key, false)) {
-                OverlayService.start(this, 0.3F);
+                OverlayService.start(this, CamOverlay.DEFAULT_ALPHA);
             } else {
                 OverlayService.stop(this);
+            }
+        } else if (key.equals(getString(R.string.key_pref_alpha))) {
+            float alpha = Float.parseFloat(sharedPreferences.getString(key, String.valueOf(CamOverlay.DEFAULT_ALPHA)));
+            if (alpha > 1) {
+                alpha = 1;
+                sharedPreferences.edit().putFloat(key, alpha).apply();
+            } else {
+                Intent intent = new Intent(OverlayService.ACTION_CHANGE_ALPHA);
+                intent.putExtra(OverlayService.EXTRA_ALPHA, alpha);
+                sendBroadcast(intent);
             }
         }
     }

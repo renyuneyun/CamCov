@@ -30,6 +30,8 @@ import java.util.List;
 
 public class CamOverlay extends TextureView implements TextureView.SurfaceTextureListener {
 
+    public static final float DEFAULT_ALPHA = 0.5F;
+
     Camera camera = null;
 
     {

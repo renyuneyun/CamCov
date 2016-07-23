@@ -20,20 +20,23 @@
 package ryey.camcov;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
 public class OverlayService extends Service {
-    public static final String EXTRA_ALPHA = "ryey.camcov.extra.ALPHA";
+    public static final String ACTION_CHANGE_ALPHA = "ryey.camcov.intent.CHANGE_ALPHA";
 
-    private static float DEFAULT_ALPHA = 0.3F;
+    public static final String EXTRA_ALPHA = "ryey.camcov.extra.ALPHA";
 
     private WindowManager.LayoutParams params = new WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -45,6 +48,17 @@ public class OverlayService extends Service {
             PixelFormat.TRANSLUCENT);
 
     private View mOverlayView;
+
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            switch (intent.getAction()) {
+                case ACTION_CHANGE_ALPHA:
+                    setViewAlpha(intent.getFloatExtra(EXTRA_ALPHA, CamOverlay.DEFAULT_ALPHA));
+                    break;
+            }
+        }
+    };
 
     public static void start(Context context, @Nullable Bundle bundle) {
         Intent intent = new Intent(context, OverlayService.class);
@@ -80,14 +94,20 @@ public class OverlayService extends Service {
                 }
             };
         }
+
+        params.alpha = 0.9F;
+
+        WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+        wm.addView(mOverlayView, params);
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ACTION_CHANGE_ALPHA);
+        registerReceiver(mReceiver, filter);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        params.alpha = intent.getFloatExtra(EXTRA_ALPHA, DEFAULT_ALPHA);
-
-        WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
-        wm.addView(mOverlayView, params);
+        setViewAlpha(intent.getFloatExtra(EXTRA_ALPHA, CamOverlay.DEFAULT_ALPHA));
 
         return super.onStartCommand(intent, flags, startId);
     }
@@ -95,9 +115,16 @@ public class OverlayService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        unregisterReceiver(mReceiver);
 
         WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
         wm.removeView(mOverlayView);
+    }
+
+    protected void setViewAlpha(float alpha) {
+        if (mOverlayView != null) {
+            mOverlayView.setAlpha(alpha);
+        }
     }
 }
 

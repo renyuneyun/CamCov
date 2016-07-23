@@ -4,4 +4,10 @@
         android:title="@string/enabled"
         android:summary="@string/enabled_summ"
         android:defaultValue="false" />
+    <EditTextPreference
+        android:key="@string/key_pref_alpha"
+        android:title="@string/alpha"
+        android:summary="@string/alpha_summary"
+        android:numeric="decimal"
+        android:defaultValue="0.5" />
 </PreferenceScreen>
