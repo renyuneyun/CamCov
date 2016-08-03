@@ -24,28 +24,15 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.PixelFormat;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.View;
-import android.view.WindowManager;
-import android.widget.FrameLayout;
 
 public class OverlayService extends Service {
     public static final String ACTION_CHANGE_ALPHA = "ryey.camcov.intent.CHANGE_ALPHA";
 
     public static final String EXTRA_ALPHA = "ryey.camcov.extra.ALPHA";
-
-    private WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-            PixelFormat.TRANSLUCENT);
 
     private View mOverlayView;
 
@@ -86,19 +73,8 @@ public class OverlayService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        if (mOverlayView == null) {
-            mOverlayView = new FrameLayout(this) {
-                {
-                    View v = new CamOverlay(getContext());
-                    addView(v);
-                }
-            };
-        }
 
-        params.alpha = 0.9F;
-
-        WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
-        wm.addView(mOverlayView, params);
+        mOverlayView = CamOverlay.show(this);
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_CHANGE_ALPHA);
@@ -117,8 +93,7 @@ public class OverlayService extends Service {
         super.onDestroy();
         unregisterReceiver(mReceiver);
 
-        WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
-        wm.removeView(mOverlayView);
+        CamOverlay.hide(this);
     }
 
     protected void setViewAlpha(float alpha) {

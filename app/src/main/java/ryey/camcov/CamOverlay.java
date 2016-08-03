@@ -20,10 +20,14 @@
 package ryey.camcov;
 
 import android.content.Context;
+import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.util.AttributeSet;
 import android.view.TextureView;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.FrameLayout;
 
 import java.io.IOException;
 import java.util.List;
@@ -32,10 +36,46 @@ public class CamOverlay extends TextureView implements TextureView.SurfaceTextur
 
     public static final float DEFAULT_ALPHA = 0.5F;
 
+    static WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT);
+
+    protected static View container = null;
+
     Camera camera = null;
 
     {
         setSurfaceTextureListener(this);
+    }
+
+    public static View show(final Context context) {
+        if (container == null) {
+            container = new FrameLayout(context) {
+                {
+                    View v = new CamOverlay(context);
+                    addView(v);
+                }
+            };
+        }
+
+        params.alpha = 0.9F;
+
+        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        wm.addView(container, params);
+
+        return container;
+    }
+
+    public static void hide(final Context context) {
+        if (container != null) {
+            WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            wm.removeView(container);
+        }
     }
 
     public CamOverlay(Context context) {

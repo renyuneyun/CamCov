@@ -22,12 +22,16 @@ package ryey.camcov;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.util.Log;
+import android.provider.Settings;
 
 public class SettingsActivity extends Activity
         implements SharedPreferences.OnSharedPreferenceChangeListener{
+
+    private static final int REQUEST_CODE_MANAGE_OVERLAY_PERMISSION = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +53,15 @@ public class SettingsActivity extends Activity
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if (key.equals(getString(R.string.key_pref_enabled))) {
             if (sharedPreferences.getBoolean(key, false)) {
-                OverlayService.start(this, CamOverlay.DEFAULT_ALPHA);
+                if (overlayPermissionIsFine()) {
+                    OverlayService.start(this, CamOverlay.DEFAULT_ALPHA);
+                } else {
+                    if (Build.VERSION.SDK_INT >= 23) {
+                        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                Uri.parse("package:" + getPackageName()));
+                        startActivityForResult(intent, REQUEST_CODE_MANAGE_OVERLAY_PERMISSION);
+                    }
+                }
             } else {
                 OverlayService.stop(this);
             }
@@ -62,6 +74,25 @@ public class SettingsActivity extends Activity
                 Intent intent = new Intent(OverlayService.ACTION_CHANGE_ALPHA);
                 intent.putExtra(OverlayService.EXTRA_ALPHA, alpha);
                 sendBroadcast(intent);
+            }
+        }
+    }
+
+    boolean overlayPermissionIsFine() {
+        if (Build.VERSION.SDK_INT >= 23)
+            return Settings.canDrawOverlays(this);
+        return true;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_CODE_MANAGE_OVERLAY_PERMISSION) {
+            if (overlayPermissionIsFine()) {
+                OverlayService.start(this, CamOverlay.DEFAULT_ALPHA);
+            } else {
+                PreferenceManager.getDefaultSharedPreferences(this).edit()
+                        .putBoolean(getString(R.string.key_pref_enabled), false)
+                        .apply();
             }
         }
     }
