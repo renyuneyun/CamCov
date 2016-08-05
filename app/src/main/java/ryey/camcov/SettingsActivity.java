@@ -42,6 +42,10 @@ public class SettingsActivity extends Activity
         getFragmentManager().beginTransaction()
                 .replace(android.R.id.content, new SettingsFragment())
                 .commit();
+
+        PreferenceManager.getDefaultSharedPreferences(this).edit()
+                .putBoolean(getString(R.string.key_pref_enabled), OverlayService.isRunning())
+                .apply();
     }
 
     @Override

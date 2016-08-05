@@ -12,6 +12,8 @@ Refer to README.en.md to view the English version of README
 
 類似軟件：transparent screen
 
+可通過Broadcast控制，參見TriggerReceiver。
+
 協議
 ------
 - GPLv3（參見LICENSE）

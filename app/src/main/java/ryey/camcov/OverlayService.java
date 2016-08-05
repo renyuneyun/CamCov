@@ -24,13 +24,16 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.support.annotation.Nullable;
+import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
+import android.util.Log;
 import android.view.View;
 
 public class OverlayService extends Service {
-    public static final String ACTION_CHANGE_ALPHA = "ryey.camcov.intent.CHANGE_ALPHA";
+    public static final String ACTION_CHANGE_ALPHA = "ryey.camcov.action.CHANGE_ALPHA";
 
     public static final String EXTRA_ALPHA = "ryey.camcov.extra.ALPHA";
 
@@ -39,6 +42,7 @@ public class OverlayService extends Service {
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.d("OverlayService", "(broadcast received) action:" + intent.getAction());
             switch (intent.getAction()) {
                 case ACTION_CHANGE_ALPHA:
                     setViewAlpha(intent.getFloatExtra(EXTRA_ALPHA, CamOverlay.DEFAULT_ALPHA));
@@ -47,11 +51,13 @@ public class OverlayService extends Service {
         }
     };
 
-    public static void start(Context context, @Nullable Bundle bundle) {
-        Intent intent = new Intent(context, OverlayService.class);
-        if (bundle != null)
-            intent.putExtras(bundle);
-        context.startService(intent);
+    private static boolean running = false;
+
+    public static void start(Context context) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        float alpha = Float.parseFloat(sharedPreferences.getString(
+                context.getString(R.string.key_pref_alpha), String.valueOf(CamOverlay.DEFAULT_ALPHA)));
+        start(context, alpha);
     }
 
     public static void start(Context context, float alpha) {
@@ -60,9 +66,26 @@ public class OverlayService extends Service {
         start(context, bundle);
     }
 
+    public static void start(Context context, @NonNull Bundle bundle) {
+        Intent intent = new Intent(context, OverlayService.class);
+        intent.putExtras(bundle);
+        context.startService(intent);
+    }
+
     public static void stop(Context context) {
         Intent intent = new Intent(context, OverlayService.class);
         context.stopService(intent);
+    }
+
+    public static void toggle(Context context) {
+        if (running)
+            stop(context);
+        else
+            start(context);
+    }
+
+    public static boolean isRunning() {
+        return running;
     }
 
     @Override
@@ -72,7 +95,9 @@ public class OverlayService extends Service {
 
     @Override
     public void onCreate() {
+        Log.d("OverlayService", "onCreate");
         super.onCreate();
+        running = true;
 
         mOverlayView = CamOverlay.show(this);
 
@@ -83,6 +108,7 @@ public class OverlayService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d("OverlayService", "onStartCommand");
         setViewAlpha(intent.getFloatExtra(EXTRA_ALPHA, CamOverlay.DEFAULT_ALPHA));
 
         return super.onStartCommand(intent, flags, startId);
@@ -90,7 +116,9 @@ public class OverlayService extends Service {
 
     @Override
     public void onDestroy() {
+        Log.d("OverlayService", "onDestroy");
         super.onDestroy();
+        running = false;
         unregisterReceiver(mReceiver);
 
         CamOverlay.hide(this);

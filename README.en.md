@@ -11,6 +11,8 @@ Dut to technical issues, this software actually uses the camera as a translucent
 
 Similar software: transparent screen
 
+Can be controlled by Broascast. See TriggerReceiver.
+
 License
 ------
 - GPLv3 (See LICENSE)

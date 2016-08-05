@@ -3,7 +3,6 @@
 
     <string name="enabled">Enable</string>
     <string name="enabled_summ">Enable the overlay</string>
-    <string name="key_pref_alpha">pref_alpha</string>
     <string name="alpha">Alpha</string>
-    <string name="alpha_summary">Control alpha of the camera overlay</string>
+    <string name="alpha_summary">Alpha of the camera overlay</string>
 </resources>
