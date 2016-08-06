@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">CamCov</string>
+
+    <string name="enabled">有効</string>
+    <string name="enabled_summ">オーバーレイを有効にします</string>
+    <string name="alpha">アルファ</string>
+    <string name="alpha_summary">カメラオーバーレイのアルファ</string>
+</resources>
