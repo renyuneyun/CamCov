@@ -11,7 +11,7 @@ Dut to technical issues, this software actually uses the camera as a translucent
 
 Similar software: transparent screen
 
-Can be controlled by Broascast. See TriggerReceiver.
+Interoperable by Broadcast/Intent. See [INTEROPERABILITY.md](INTEROPERABILITY.md).
 
 License
 ------

@@ -1,6 +1,10 @@
 CamCov : Camera Cover
 ======
-Refer to README.en.md to view the English version of README
+[<img src="https://f-droid.org/badge/get-it-on.png"
+      alt="Get it on F-Droid"
+      height="80">](https://f-droid.org/app/ryey.camcov)
+
+Refer to [README.en.md](README.en.md) to view the English version of README
 
 簡介
 ------
@@ -12,7 +16,7 @@ Refer to README.en.md to view the English version of README
 
 類似軟件：transparent screen
 
-可通過Broadcast控制，參見TriggerReceiver。
+可藉由Broadcast/Intent控制，參見[INTEROPERABILITY.md](INTEROPERABILITY.md)。
 
 協議
 ------
