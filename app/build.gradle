@@ -8,8 +8,8 @@ android {
         applicationId "ryey.camcov"
         minSdkVersion 15
         targetSdkVersion 23
-        versionCode 5
-        versionName "0.4"
+        versionCode 6
+        versionName "0.4.1"
     }
     buildTypes {
         release {
