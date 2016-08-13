@@ -19,19 +19,30 @@
 
 package ryey.camcov;
 
+import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.util.Log;
 
 public class SettingsActivity extends Activity
-        implements SharedPreferences.OnSharedPreferenceChangeListener{
+        implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final int REQUEST_CODE_MANAGE_OVERLAY_PERMISSION = 1;
+    private static final int REQUEST_CODE_MANAGE_CAMERA_PERMISSION = 2;
+
+    private static final String TAG = SettingsActivity.class.getSimpleName();
+
+    RequirePermissionThread thread = null;
+    boolean has_camera_permission;
+    boolean has_overlay_permission;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,10 +53,6 @@ public class SettingsActivity extends Activity
         getFragmentManager().beginTransaction()
                 .replace(android.R.id.content, new SettingsFragment())
                 .commit();
-
-        PreferenceManager.getDefaultSharedPreferences(this).edit()
-                .putBoolean(getString(R.string.key_pref_enabled), OverlayService.isRunning())
-                .apply();
     }
 
     @Override
@@ -57,15 +64,7 @@ public class SettingsActivity extends Activity
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if (key.equals(getString(R.string.key_pref_enabled))) {
             if (sharedPreferences.getBoolean(key, false)) {
-                if (overlayPermissionIsFine()) {
-                    OverlayService.start(this, CamOverlay.DEFAULT_ALPHA);
-                } else {
-                    if (Build.VERSION.SDK_INT >= 23) {
-                        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                Uri.parse("package:" + getPackageName()));
-                        startActivityForResult(intent, REQUEST_CODE_MANAGE_OVERLAY_PERMISSION);
-                    }
-                }
+                tryStartOverlay();
             } else {
                 OverlayService.stop(this);
             }
@@ -82,22 +81,124 @@ public class SettingsActivity extends Activity
         }
     }
 
+    synchronized void tryStartOverlay() {
+        Log.d(TAG, "tryStartOverlay()");
+        if (Build.VERSION.SDK_INT >= 23) {
+            Log.d(TAG, " SDK >= 23");
+            if (thread == null) {
+                thread = new RequirePermissionThread();
+                thread.start();
+            }
+        } else {
+            Log.d(TAG, " SDK < 23");
+            OverlayService.start(this, CamOverlay.DEFAULT_ALPHA);
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    boolean cameraPermissionIsFine() {
+        int result = checkSelfPermission(Manifest.permission.CAMERA);
+        boolean status =result == PackageManager.PERMISSION_GRANTED;
+        Log.d(TAG, "camera permission is " + String.valueOf(status));
+        return status;
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
     boolean overlayPermissionIsFine() {
-        if (Build.VERSION.SDK_INT >= 23)
-            return Settings.canDrawOverlays(this);
-        return true;
+        boolean status = Settings.canDrawOverlays(this);
+        Log.d(TAG, "overlay permission is " + String.valueOf(status));
+        return status;
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.d(TAG, "onActivityResult");
         if (requestCode == REQUEST_CODE_MANAGE_OVERLAY_PERMISSION) {
-            if (overlayPermissionIsFine()) {
-                OverlayService.start(this, CamOverlay.DEFAULT_ALPHA);
-            } else {
-                PreferenceManager.getDefaultSharedPreferences(this).edit()
-                        .putBoolean(getString(R.string.key_pref_enabled), false)
-                        .apply();
+            if (Build.VERSION.SDK_INT < 23) {
+                Log.wtf(TAG, "SDK version < 23 used REQUEST_CODE_MANAGE_OVERLAY_PERMISSION");
             }
+            has_overlay_permission = overlayPermissionIsFine();
+            Log.v(TAG, " (onActivityResult) notifying");
+            synchronized (thread) {
+                thread.notify();
+            }
+            Log.v(TAG, " (onActivityResult) notified");
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        Log.d(TAG, "onRequestPermissionsResult");
+        if (requestCode == REQUEST_CODE_MANAGE_CAMERA_PERMISSION) {
+            if (Build.VERSION.SDK_INT < 23) {
+                Log.wtf(TAG, "SDK version < 23 used REQUEST_CODE_MANAGE_CAMERA_PERMISSION");
+            }
+            has_camera_permission = cameraPermissionIsFine();
+            Log.v(TAG, " (onRequestPermissionsResult) notifying");
+            synchronized (thread) {
+                thread.notify();
+            }
+            Log.v(TAG, " (onRequestPermissionsResult) notified");
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    class RequirePermissionThread extends Thread {
+        private final String TAG = RequirePermissionThread.class.getSimpleName();
+        @Override
+        synchronized public void run() {
+            Log.d(TAG, "Thread running");
+            has_overlay_permission = false;
+            has_camera_permission = false;
+            if (requireCameraPermission()) {
+                Log.v(TAG, "requiring CAMERA permission, waiting");
+                try {
+                    this.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            Log.d(TAG, "checking CAMERA permission");
+            if (has_camera_permission) {
+                if (requireOverlayPermission()) {
+                    Log.v(TAG, "requiring OVERLAY permission, waiting");
+                    try {
+                        this.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                Log.d(TAG, "checking OVERLAY permission");
+                if (has_overlay_permission) {
+                    OverlayService.start(SettingsActivity.this, CamOverlay.DEFAULT_ALPHA);
+                    thread = null;
+                    return;
+                }
+            }
+            Log.d(TAG, "permission NOT correct");
+            thread = null;
+        }
+
+        boolean requireCameraPermission() {
+            if (cameraPermissionIsFine()) {
+                has_camera_permission = true;
+            } else {
+                Log.d(TAG, " requiring CAMERA permission");
+                requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CODE_MANAGE_CAMERA_PERMISSION);
+            }
+            return !has_camera_permission;
+        }
+
+        boolean requireOverlayPermission() {
+            if (overlayPermissionIsFine()) {
+                has_overlay_permission = true;
+            } else {
+                Log.d(TAG, " requiring OVERLAY permission");
+                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + getPackageName()));
+                startActivityForResult(intent, REQUEST_CODE_MANAGE_OVERLAY_PERMISSION);
+            }
+            return !has_overlay_permission;
         }
     }
 }

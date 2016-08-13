@@ -85,6 +85,13 @@ public class OverlayService extends Service {
     }
 
     public static boolean isRunning() {
+        String str;
+        if (running) {
+            str = "RUNNING";
+        } else {
+            str = "NOT running";
+        }
+        Log.d("OverlayService", "service is " + str);
         return running;
     }
 

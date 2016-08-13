@@ -26,6 +26,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.CheckBoxPreference;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -70,9 +71,13 @@ public class SettingsFragment extends PreferenceFragment {
 
     @Override
     public void onResume() {
+        Log.d(getClass().getSimpleName(), "onResume");
         super.onResume();
         getPreferenceScreen().getSharedPreferences()
                 .registerOnSharedPreferenceChangeListener(listener);
+
+        CheckBoxPreference preference_enabled = (CheckBoxPreference) this.findPreference(getString(R.string.key_pref_enabled));
+        preference_enabled.setChecked(OverlayService.isRunning());
     }
 
     @Override
