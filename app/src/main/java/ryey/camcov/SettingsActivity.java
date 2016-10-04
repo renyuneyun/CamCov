@@ -72,7 +72,7 @@ public class SettingsActivity extends Activity
             float alpha = Float.parseFloat(sharedPreferences.getString(key, String.valueOf(CamOverlay.DEFAULT_ALPHA)));
             if (alpha > 1) {
                 alpha = 1;
-                sharedPreferences.edit().putFloat(key, alpha).apply();
+                sharedPreferences.edit().putString(key, String.valueOf(alpha)).apply();
             } else {
                 Intent intent = new Intent(OverlayService.ACTION_CHANGE_ALPHA);
                 intent.putExtra(OverlayService.EXTRA_ALPHA, alpha);
