@@ -10,4 +10,14 @@
         android:summary="@string/alpha_summary"
         android:numeric="decimal"
         android:defaultValue="0.5" />
+    <CheckBoxPreference
+        android:key="@string/key_pref_invert_x"
+        android:title="@string/invert_x"
+        android:summary="@string/invert_x_summary"
+        android:defaultValue="false" />
+    <CheckBoxPreference
+        android:key="@string/key_pref_invert_y"
+        android:title="@string/invert_y"
+        android:summary="@string/invert_y_summary"
+        android:defaultValue="false" />
 </PreferenceScreen>

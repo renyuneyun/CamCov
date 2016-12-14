@@ -5,4 +5,8 @@
     <string name="enabled_summ">Enable the overlay</string>
     <string name="alpha">Alpha</string>
     <string name="alpha_summary">Alpha of the camera overlay</string>
+    <string name="invert_x">Invert X</string>
+    <string name="invert_x_summary">Invert X axis</string>
+    <string name="invert_y">Invert Y</string>
+    <string name="invert_y_summary">Invert Y axis</string>
 </resources>

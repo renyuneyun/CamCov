@@ -36,6 +36,8 @@ public class OverlayService extends Service {
     public static final String ACTION_CHANGE_ALPHA = "ryey.camcov.action.CHANGE_ALPHA";
 
     public static final String EXTRA_ALPHA = "ryey.camcov.extra.ALPHA";
+    public static final String EXTRA_SX = "ryey.camcov.extra.ScaleX";
+    public static final String EXTRA_SY = "ryey.camcov.extra.ScaleY";
 
     private View mOverlayView;
 
@@ -45,7 +47,7 @@ public class OverlayService extends Service {
             Log.d("OverlayService", "(broadcast received) action:" + intent.getAction());
             switch (intent.getAction()) {
                 case ACTION_CHANGE_ALPHA:
-                    setViewAlpha(intent.getFloatExtra(EXTRA_ALPHA, CamOverlay.DEFAULT_ALPHA));
+                    setOverlayAlpha(intent.getFloatExtra(EXTRA_ALPHA, CamOverlay.DEFAULT_ALPHA));
                     break;
             }
         }
@@ -54,15 +56,18 @@ public class OverlayService extends Service {
     private static boolean running = false;
 
     public static void start(Context context) {
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences sharedPreferences =
+                PreferenceManager.getDefaultSharedPreferences(context);
         float alpha = Float.parseFloat(sharedPreferences.getString(
                 context.getString(R.string.key_pref_alpha), String.valueOf(CamOverlay.DEFAULT_ALPHA)));
-        start(context, alpha);
-    }
-
-    public static void start(Context context, float alpha) {
+        float sx = sharedPreferences.getBoolean(
+                context.getString(R.string.key_pref_invert_x), false) ? -1: 1;
+        float sy = sharedPreferences.getBoolean(
+                context.getString(R.string.key_pref_invert_y), false) ? -1: 1;
         Bundle bundle = new Bundle();
         bundle.putFloat(EXTRA_ALPHA, alpha);
+        bundle.putFloat(EXTRA_SX, sx);
+        bundle.putFloat(EXTRA_SY, sy);
         start(context, bundle);
     }
 
@@ -116,7 +121,10 @@ public class OverlayService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d("OverlayService", "onStartCommand");
-        setViewAlpha(intent.getFloatExtra(EXTRA_ALPHA, CamOverlay.DEFAULT_ALPHA));
+        setOverlayAlpha(intent.getFloatExtra(EXTRA_ALPHA, CamOverlay.DEFAULT_ALPHA));
+        float sx = intent.getFloatExtra(EXTRA_SX, 1);
+        float sy = intent.getFloatExtra(EXTRA_SY, 1);
+        setOverlayScale(sx, sy);
 
         return super.onStartCommand(intent, flags, startId);
     }
@@ -128,12 +136,19 @@ public class OverlayService extends Service {
         running = false;
         unregisterReceiver(mReceiver);
 
-        CamOverlay.hide(this);
+        CamOverlay.hide();
     }
 
-    protected void setViewAlpha(float alpha) {
+    protected void setOverlayAlpha(float alpha) {
         if (mOverlayView != null) {
             mOverlayView.setAlpha(alpha);
+        }
+    }
+
+    void setOverlayScale(float sx, float sy) {
+        if (mOverlayView != null) {
+            mOverlayView.setScaleX(sx);
+            mOverlayView.setScaleY(sy);
         }
     }
 }

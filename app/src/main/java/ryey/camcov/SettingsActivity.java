@@ -91,7 +91,7 @@ public class SettingsActivity extends Activity
             }
         } else {
             Log.d(TAG, " SDK < 23");
-            OverlayService.start(this, CamOverlay.DEFAULT_ALPHA);
+            OverlayService.start(this);
         }
     }
 
@@ -170,7 +170,7 @@ public class SettingsActivity extends Activity
                 }
                 Log.d(TAG, "checking OVERLAY permission");
                 if (has_overlay_permission) {
-                    OverlayService.start(SettingsActivity.this, CamOverlay.DEFAULT_ALPHA);
+                    OverlayService.start(SettingsActivity.this);
                     thread = null;
                     return;
                 }

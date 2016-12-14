@@ -20,10 +20,13 @@
 package ryey.camcov;
 
 import android.content.Context;
+import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.util.AttributeSet;
+import android.view.Gravity;
+import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
@@ -36,6 +39,10 @@ public class CamOverlay extends TextureView implements TextureView.SurfaceTextur
 
     public static final float DEFAULT_ALPHA = 0.5F;
 
+    static WindowManager windowManager = null;
+
+    static CamOverlay v = null;
+
     static WindowManager.LayoutParams params = new WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -45,36 +52,30 @@ public class CamOverlay extends TextureView implements TextureView.SurfaceTextur
                     WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT);
 
-    protected static View container = null;
-
     Camera camera = null;
 
     {
         setSurfaceTextureListener(this);
+        params.alpha = 0.9F;
     }
 
     public static View show(final Context context) {
-        if (container == null) {
-            container = new FrameLayout(context) {
-                {
-                    View v = new CamOverlay(context);
-                    addView(v);
-                }
-            };
+        if (v == null) {
+            v = new CamOverlay(context);
         }
 
-        params.alpha = 0.9F;
+        if (windowManager == null) {
+            windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        }
+        windowManager.addView(v, params);
 
-        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        wm.addView(container, params);
-
-        return container;
+        return v;
     }
 
-    public static void hide(final Context context) {
-        if (container != null) {
-            WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-            wm.removeView(container);
+    public static void hide() {
+        if (v != null) {
+//            WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            windowManager.removeView(v);
         }
     }
 
@@ -92,7 +93,7 @@ public class CamOverlay extends TextureView implements TextureView.SurfaceTextur
             camera = Camera.open();
         }
         if (camera != null) {
-            camera.setDisplayOrientation(90);
+//            camera.setDisplayOrientation(90);
 
             Camera.Parameters parameters = camera.getParameters();
 
@@ -106,6 +107,49 @@ public class CamOverlay extends TextureView implements TextureView.SurfaceTextur
             parameters.setPreviewFpsRange(range[0], range[1]);
 
             camera.setParameters(parameters);
+
+            Matrix transform = new Matrix();
+            int rotation = windowManager.getDefaultDisplay().getRotation();
+
+            int orientation = 0;
+            int layout_w = previewSize.width, layout_h = previewSize.height;
+
+            switch (rotation) {
+                case Surface.ROTATION_0:
+                    orientation = 90;
+                    layout_w = previewSize.height;
+                    layout_h = previewSize.width;
+//                    transform.setScale(-1, 1, previewSize.height/2, 0);
+                    break;
+
+                case Surface.ROTATION_90:
+                    orientation = 0;
+                    layout_w = previewSize.width;
+                    layout_h = previewSize.height;
+//                    transform.setScale(-1, 1, previewSize.width/2, 0);
+                    break;
+
+                case Surface.ROTATION_180:
+                    orientation = 270;
+                    layout_w = previewSize.height;
+                    layout_h = previewSize.width;
+//                    transform.setScale(-1, 1, previewSize.height/2, 0);
+                    break;
+
+                case Surface.ROTATION_270:
+                    orientation = 180;
+                    layout_w = previewSize.width;
+                    layout_h = previewSize.height;
+//                    transform.setScale(-1, 1, previewSize.width/2, 0);
+                    break;
+            }
+
+            camera.setDisplayOrientation(orientation);
+            setLayoutParams(new FrameLayout.LayoutParams(
+                    layout_w, layout_h, Gravity.CENTER));
+//            transform.setScale(sx, sy, layout_w/2, layout_h/2);
+
+            setTransform(transform);
 
             try {
                 camera.setPreviewTexture(surfaceTexture);
